@@ -1,11 +1,12 @@
 import os
 import json
 import requests
+import base64
 from flask import Flask, request, jsonify
 
 app = Flask(__name__)
 
-# جلب الإعدادات الأساسية فقط
+# جلب الإعدادات الأساسية
 GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN")
 GITHUB_REPO = "Ma18308/all-akbar"
 GITHUB_FILE = "alert.txt"
@@ -18,21 +19,19 @@ def webhook():
         if not data:
             return jsonify({"status": "error", "message": "No JSON data received"}), 400
 
-        # إنشاء محتوى التنبيه لكتابته في GitHub
+        # إنشاء محتوى التنبيه
         content_string = f"Ticker: {data.get('ticker')}\nPrice: {data.get('price')}\nAction: {data.get('action')}"
         
-        # إرسال البيانات مباشرة إلى GitHub بدون شروط كلمة سر
         url = f"https://github.com{GITHUB_REPO}/contents/{GITHUB_FILE}"
         headers = {
             "Authorization": f"Bearer {GITHUB_TOKEN}",
             "Accept": "application/vnd.github.v3+json"
         }
         
-        # جلب ملف الـ SHA إذا كان موجوداً لتحديثه
+        # جلب ملف الـ SHA إذا كان موجوداً
         r = requests.get(url, headers=headers)
         sha = r.json().get("sha") if r.status_code == 200 else None
         
-        import base64
         payload = {
             "message": "TradingView Alert Update",
             "content": base64.b64encode(content_string.encode('utf-8')).decode('utf-8'),
